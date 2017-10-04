@@ -78,5 +78,39 @@
             ],
             "filters": []
         }
+    ],
+    "executeTransform": [
+        {
+            "compositeKey": {
+                "measures": ["/gdc/md/hdint8y1xvk9oyns1r0iefknwivzlb4g/obj/15415"]
+            },
+            "response": {
+                "transformationResponse": {
+                    "dimensions": [
+                        {
+                            "name": "x",
+                            "headers": [
+                                {
+                                    "type": "metric",
+                                    "uri": "metricGroup",
+                                    "name": "metric",
+                                    "labels": [
+                                        {
+                                            "id": "0",
+                                            "value": "Sum of Sales",
+                                            "type": "metric"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "data": ["2356056.57999999"],
+                    "size": [1],
+                    "offset": [0],
+                    "overallSize": [1]
+                }
+            }
+        }
     ]
 }
