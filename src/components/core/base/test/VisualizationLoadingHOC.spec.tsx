@@ -9,6 +9,8 @@ import {
     ErrorComponent
 } from '../../../tests/mocks';
 
+import {} from 'jest';
+
 import {
     ICommonVisualizationProps,
     ILoadingInjectedProps,
@@ -18,16 +20,20 @@ import {
 import { delay } from '../../../tests/utils';
 import { oneMeasureResponse } from '../../../../execution/fixtures/ExecuteAfm.fixtures';
 import { IDrillableItem } from '../../../../interfaces/DrillEvents';
+import { IDataSourceProviderInjectedProps } from '../../../afm/DataSourceProvider';
 
 export interface ITestInnerComponentProps extends ICommonVisualizationProps {
     customPropFooBar?: number;
 }
 
-class TestInnerComponent extends React.Component<ITestInnerComponentProps & ILoadingInjectedProps> {
-    public static defaultProps: Partial<ITestInnerComponentProps & ILoadingInjectedProps> = {
-        ...commonDefaultprops,
-        customPropFooBar: 123
-    };
+class TestInnerComponent
+    extends React.Component<ITestInnerComponentProps & ILoadingInjectedProps & IDataSourceProviderInjectedProps> {
+
+    public static defaultProps:
+        Partial<ITestInnerComponentProps & ILoadingInjectedProps & IDataSourceProviderInjectedProps> = {
+            ...commonDefaultprops,
+            customPropFooBar: 123
+        };
 
     public static propTypes = {
         customPropFooBar: PropTypes.number
@@ -41,13 +47,14 @@ class TestInnerComponent extends React.Component<ITestInnerComponentProps & ILoa
 describe('VisualizationLoadingHOC', () => {
     const WrappedComponent = visualizationLoadingHOC(TestInnerComponent);
 
-    const createComponent = (customProps: Partial<ITestInnerComponentProps> = {}) => {
-        const props = {
-            dataSource: oneMeasureDataSource,
-            ...customProps
+    const createComponent =
+        (customProps: Partial<ITestInnerComponentProps & IDataSourceProviderInjectedProps> = {}) => {
+            const props = {
+                dataSource: oneMeasureDataSource,
+                ...customProps
+            };
+            return mount<ITestInnerComponentProps & IDataSourceProviderInjectedProps>(<WrappedComponent {...props} />);
         };
-        return mount<ITestInnerComponentProps>(<WrappedComponent {...props} />);
-    };
 
     it('should render the inner component passing down all the external properties', () => {
         const props = {
