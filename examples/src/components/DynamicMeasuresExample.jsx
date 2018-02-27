@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-closing-tag-location */
 import React, { Component } from 'react';
-import { AfmComponents } from '@gooddata/react-components';
+import { LineChart, ColumnChart } from '@gooddata/react-components';
 import sdk from 'gooddata';
 
 import '@gooddata/react-components/styles/css/main.css';
@@ -14,8 +14,6 @@ import {
     projectId,
     franchiseFeesTag
 } from '../utils/fixtures';
-
-const { LineChart, ColumnChart } = AfmComponents;
 
 export class DynamicMeasuresExample extends Component {
     constructor(props) {
@@ -83,6 +81,22 @@ export class DynamicMeasuresExample extends Component {
         };
     }
 
+    getNewMeasureDefinition(measureItem) {
+        return {
+            measure: {
+                localIdentifier: measureItem.link.split('/').reverse()[0],
+                definition: {
+                    measureDefinition: {
+                        item: {
+                            uri: measureItem.link
+                        }
+                    }
+                },
+                format: '#,##0'
+            }
+        };
+    }
+
     render() {
         const { measureList, error } = this.state;
 
@@ -112,8 +126,8 @@ export class DynamicMeasuresExample extends Component {
                         h3 {
                             margin-top: 0;
                         }
-                        .ul {
-                            list-style-type: 'none';
+                        ul {
+                            list-style-type: none;
                             padding: 0;
                             margin: 0;
                         }
@@ -139,22 +153,16 @@ export class DynamicMeasuresExample extends Component {
 
         if (measureList) {
             const selectedMeasures = measureList.filter(measure => measure.isSelected);
-            const measures = selectedMeasures.map(this.getMeasureDefinition);
+            const measures = selectedMeasures.map(this.getNewMeasureDefinition);
 
             if (selectedMeasures.length) {
-                const lineChartAfm = {
-                    measures,
-                    attributes: [
-                        {
-                            displayForm: {
-                                identifier: monthDateIdentifier
-                            },
-                            localIdentifier: 'month'
-                        }
-                    ]
-                };
-                const columnChartAfm = {
-                    measures
+                const attribute = {
+                    visualizationAttribute: {
+                        displayForm: {
+                            identifier: monthDateIdentifier
+                        },
+                        localIdentifier: 'month'
+                    }
                 };
 
                 content = (
@@ -162,23 +170,18 @@ export class DynamicMeasuresExample extends Component {
                         {/* language=CSS */}
                         <style jsx>{`
                             .graph-wrapper {
-                                display: flex;
+                                display: grid;
+                                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                             }
                             .graph {
                                 height: 300px;
-                            }
-                            .graph-line {
-                                flex: 1 1 60%;
-                                margin-right: 20px;
-                            }
-                            .graph-column {
-                                flex: 1 1 40%;
                             }
                         `}</style>
                         <div className="graph graph-line s-dynamic-measures-line-chart">
                             <LineChart
                                 projectId={projectId}
-                                afm={lineChartAfm}
+                                measures={measures}
+                                viewBy={attribute}
                                 onLoadingChanged={this.onLoadingChanged}
                                 onError={this.onError}
                                 LoadingComponent={Loading}
@@ -189,7 +192,7 @@ export class DynamicMeasuresExample extends Component {
                         <div className="graph graph-column s-dynamic-measures-column-chart">
                             <ColumnChart
                                 projectId={projectId}
-                                afm={columnChartAfm}
+                                measures={measures}
                                 onLoadingChanged={this.onLoadingChanged}
                                 onError={this.onError}
                                 LoadingComponent={Loading}
