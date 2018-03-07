@@ -1,12 +1,12 @@
 import React from 'react';
 import { PropTypes } from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import * as GD from 'gooddata';
 
 export const title = 'Sign in to GoodData platform';
 
 class LoginOverlay extends React.Component {
     static propTypes = {
+        sdk: PropTypes.object.isRequired,
         isLoggedIn: PropTypes.bool.isRequired,
         onLogin: PropTypes.func
     }
@@ -55,7 +55,7 @@ class LoginOverlay extends React.Component {
         e.preventDefault();
         const { username, password } = this.state;
 
-        GD.user.login(username, password)
+        this.props.sdk.user.login(username, password)
             .then(() => {
                 this.setState({
                     isLoggedIn: true,

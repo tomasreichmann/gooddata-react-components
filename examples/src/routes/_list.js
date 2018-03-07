@@ -9,11 +9,13 @@ import Execute from './Execute';
 import DatePicker from './DatePicker';
 import ResponsiveChart from './ResponsiveChart';
 import DynamicMeasures from './DynamicMeasures';
+import MultipleSdkSupport from './MultipleSdkSupport';
 
 export const advancedUseCasesRoutes = [
     { path: '/advanced/global-filters', title: 'Global Filters', Component: GlobalFilters },
     { path: '/advanced/dynamic-measures', title: 'Dynamic Measures', Component: DynamicMeasures },
     { path: '/advanced/date-picker', title: 'Date Picker', Component: DatePicker },
+    { path: '/advanced/multiple-sdk-support', title: 'Multiple SDK Support', Component: MultipleSdkSupport },
     { path: '/advanced/responsive', title: 'Responsive Chart', Component: ResponsiveChart }
 ];
 

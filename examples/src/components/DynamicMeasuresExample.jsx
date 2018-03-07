@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-closing-tag-location */
 import React, { Component } from 'react';
 import { AfmComponents } from '@gooddata/react-components';
-import * as GD from 'gooddata';
+import PropTypes from 'prop-types';
 
 import '@gooddata/react-components/styles/css/main.css';
 
@@ -18,6 +18,10 @@ import {
 const { LineChart, ColumnChart } = AfmComponents;
 
 export class DynamicMeasuresExample extends Component {
+    static propTypes = {
+        sdk: PropTypes.object.isRequired
+    };
+
     constructor(props) {
         super(props);
         this.state = {
@@ -29,7 +33,7 @@ export class DynamicMeasuresExample extends Component {
     }
 
     componentWillMount() {
-        GD.xhr.get(`/gdc/md/${projectId}/tags/${franchiseFeesTag}`).then(
+        this.props.sdk.xhr.get(`/gdc/md/${projectId}/tags/${franchiseFeesTag}`).then(
             (response) => {
                 if (!response.entries.length) {
                     return this.setState({
@@ -85,6 +89,7 @@ export class DynamicMeasuresExample extends Component {
 
     render() {
         const { measureList, error } = this.state;
+        console.log('this.props', this.props);
 
         if (error) {
             return <Error error={error} />;

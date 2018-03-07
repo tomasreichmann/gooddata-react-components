@@ -200,10 +200,6 @@
     react-intl "^2.2.3"
     rxjs "^5.5.6"
 
-"@gooddata/typings@0.0.4":
-  version "0.0.4"
-  resolved "https://registry.yarnpkg.com/@gooddata/typings/-/typings-0.0.4.tgz#cc2a625010a15ee2dbe698caaa35b518dd33f1fd"
-
 "@gooddata/typings@1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@gooddata/typings/-/typings-1.0.0.tgz#3fb9abcfbefc15745d6a0236c924d0d93e490e14"
@@ -3569,11 +3565,11 @@ gooddata@4.3.0:
     lodash "4.17.4"
     md5 "2.2.1"
 
-gooddata@4.5.1:
-  version "4.5.1"
-  resolved "https://registry.yarnpkg.com/gooddata/-/gooddata-4.5.1.tgz#3cb018496e1d6e2d9f613680822471cd679030b4"
+gooddata@5.0.0-alpha1:
+  version "5.0.0-alpha1"
+  resolved "https://registry.yarnpkg.com/gooddata/-/gooddata-5.0.0-alpha1.tgz#6b1799b363e221cf35bef736ed9263392f93a586"
   dependencies:
-    "@gooddata/typings" "0.0.4"
+    "@gooddata/typings" "1.0.0"
     es6-promise "3.0.2"
     fetch-cookie "0.4.0"
     invariant "2.2.2"
@@ -3582,9 +3578,9 @@ gooddata@4.5.1:
     md5 "2.2.1"
     qs "6.5.1"
 
-gooddata@5.0.0-alpha1:
-  version "5.0.0-alpha1"
-  resolved "https://registry.yarnpkg.com/gooddata/-/gooddata-5.0.0-alpha1.tgz#6b1799b363e221cf35bef736ed9263392f93a586"
+gooddata@5.0.0-alpha3:
+  version "5.0.0-alpha3"
+  resolved "https://registry.yarnpkg.com/gooddata/-/gooddata-5.0.0-alpha3.tgz#a199967ee3a5bbed4a4a35d80ac05b98fb312c30"
   dependencies:
     "@gooddata/typings" "1.0.0"
     es6-promise "3.0.2"

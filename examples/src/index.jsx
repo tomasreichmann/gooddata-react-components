@@ -1,7 +1,7 @@
 /* eslint-disable react/jsx-closing-tag-location */
 import React from 'react';
 import ReactDOM from 'react-dom';
-import * as GD from 'gooddata';
+import { factory as createSdk } from 'gooddata';
 
 import {
     BrowserRouter as Router,
@@ -28,9 +28,14 @@ export class App extends React.Component {
         this.logout = this.logout.bind(this);
     }
 
+    componentWillMount() {
+        this.sdk = createSdk(GDC);
+    }
+
     componentDidMount() {
         this.isUserLoggedIn();
     }
+
 
     onUserLogin(isLoggedIn, errorMessage) {
         this.setState({
@@ -43,7 +48,7 @@ export class App extends React.Component {
     }
 
     isUserLoggedIn() {
-        GD.user.isLoggedIn()
+        this.sdk.user.isLoggedIn()
             .then((isLoggedIn) => {
                 this.setState({ isLoggedIn, errorMessage: null });
             })
@@ -53,7 +58,7 @@ export class App extends React.Component {
     }
 
     logout() {
-        GD.user.logout().then(() => {
+        this.sdk.user.logout().then(() => {
             this.setState({
                 isLoggedIn: false
             });
@@ -111,11 +116,11 @@ export class App extends React.Component {
                         {routes.map(({ title, path, Component, redirectTo, ...routeProps }) => (<Route
                             key={path}
                             path={path}
-                            component={Component}
+                            component={props => <Component {...props} sdk={this.sdk} />}
                             {...routeProps}
                         />))}
                     </main>
-                    <LoginOverlay onLogin={this.onUserLogin} isLoggedIn={isLoggedIn} />
+                    <LoginOverlay onLogin={this.onUserLogin} isLoggedIn={isLoggedIn} sdk={this.sdk} />
                 </div>
             </Router>
         );

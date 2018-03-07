@@ -5,7 +5,7 @@ import DynamicMeasuresExample from '../components/DynamicMeasuresExample';
 import DynamicMeasuresExampleSRC from '!raw-loader!../components/DynamicMeasuresExample'; // eslint-disable-line import/no-webpack-loader-syntax, import/no-unresolved, import/extensions, import/first
 
 
-export const DynamicMeasures = () => (
+export const DynamicMeasures = props => (
     <div>
         <h1>Dynamic Measures</h1>
 
@@ -15,7 +15,7 @@ export const DynamicMeasures = () => (
             The visualizations display only the measures selected in the list.
         </p>
 
-        <ExampleWithSource for={DynamicMeasuresExample} source={DynamicMeasuresExampleSRC} />
+        <ExampleWithSource for={() => <DynamicMeasuresExample {...props} />} source={DynamicMeasuresExampleSRC} />
     </div>
 );
 
