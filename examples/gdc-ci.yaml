@@ -1,5 +1,8 @@
 before:
-  - ci-yarn-install
+  - cd ..
+  - yarn install --pure-lockfile
+  - cd -
+  - yarn install --pure-lockfile
 dist:
   - yarn build --env.basepath=/examples
 pull-request:
