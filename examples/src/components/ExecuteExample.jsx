@@ -1,8 +1,7 @@
 // (C) 2007-2018 GoodData Corporation
 /* eslint-disable react/jsx-closing-tag-location */
 import React, { Component } from 'react';
-import { Execute, LoadingComponent, ErrorComponent } from '@gooddata/react-components';
-
+import { Execute, LoadingComponent, ErrorComponent, isEmptyResult } from '@gooddata/react-components';
 import { totalSalesIdentifier, projectId } from '../utils/fixtures';
 
 export class ExecuteExample extends Component {
@@ -11,8 +10,6 @@ export class ExecuteExample extends Component {
 
         // We need to track error and isLoading states, executionNumber to force remount of execution component
         this.state = {
-            error: null,
-            isLoading: true,
             executionNumber: 0,
             willFail: true
         };
@@ -26,18 +23,11 @@ export class ExecuteExample extends Component {
         console.log('isLoading', isLoading);
         // onLoadingChanged must reset error, so that we are not in error during loading
         // onError is run after onLoadingChanged, so we do not have to worry about overriding current error
-        this.setState({
-            isLoading,
-            error: null
-        });
     }
 
     onError(error) {
         // eslint-disable-next-line no-console
         console.log('onError', error);
-        this.setState({
-            error
-        });
     }
 
     retry() {
@@ -79,7 +69,7 @@ export class ExecuteExample extends Component {
     }
 
     render() {
-        const { error, isLoading, executionNumber, willFail } = this.state;
+        const { willFail } = this.state;
         const afm = {
             measures: [
                 {
@@ -96,18 +86,8 @@ export class ExecuteExample extends Component {
             ]
         };
 
-        let status = null;
-
-        // This is how we render loading and error states
-        if (isLoading) {
-            status = <div className="gd-message progress"><div className="gd-message-text">Loading…</div></div>;
-        } else if (error) {
-            status = <div className="gd-message error"><div className="gd-message-text">Oops, simulated error! Retry?</div></div>;
-        }
-
         return (
             <div>
-                {status}
                 <p>
                     <button onClick={this.retry} className="button button-action s-retry-button">Retry</button>
                     &ensp;(fails every second attempt)
@@ -116,13 +96,22 @@ export class ExecuteExample extends Component {
                     We need to render the Execute component even in loading
                     otherwise the ongoing request is cancelled
                 */}
-                <Execute
-                    key={executionNumber}
-                    afm={afm}
-                    projectId={projectId}
-                    onLoadingChanged={this.onLoadingChanged}
-                    onError={this.onError}
-                >{this.executeChildrenFunction}
+
+
+                <Execute afm={afm} projectId={projectId} onLoadingChanged={e => e} onError={e => e} >
+                    {
+                        (execution) => {
+                            const { isLoading, error, result } = execution;
+                            if (isLoading) {
+                                return (<div>Loading data...</div>);
+                            } else if (error) {
+                                return (<div>There was an error</div>);
+                            }
+
+                            return isEmptyResult(result) ? (
+                                <div>Empty result</div>) : (<div>{JSON.stringify(result.executionResult)}</div>);
+                        }
+                    }
                 </Execute>
             </div>
         );

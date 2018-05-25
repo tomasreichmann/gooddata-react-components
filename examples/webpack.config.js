@@ -20,7 +20,6 @@ const backendShortcuts = {
 
 const defaultBackend = backendShortcuts.developer;
 
-
 module.exports = async (env) => {
     const basePath = env && env.basePath || ''; // eslint-disable-line no-mixed-operators
     const backendParam = env ? env.backend : '';
@@ -29,29 +28,28 @@ module.exports = async (env) => {
 
     const isProduction = process.env.NODE_ENV === 'production';
 
-    // see also production proxy at /examples/server/src/endpoints/proxy.js
     const proxy = {
         '/gdc': {
             target: backendUrl,
             secure: false,
             cookieDomainRewrite: '',
-            onProxyReq: (proxyReq) => {
-                console.log('proxy', '/gdc', proxyReq.path);
-                if (proxyReq.method === 'DELETE' && !proxyReq.getHeader('content-length')) {
-                    // Only set content-length to zero if not already specified
-                    proxyReq.setHeader('content-length', '0');
-                }
-
-                proxyReq.setHeader('host', backendUrl.split('/')[2]); // White labeled resources are based on host header
-                proxyReq.setHeader('referer', backendUrl);
-                proxyReq.setHeader('origin', null);
+            headers: {
+                host: backendUrl.split('/')[2],
+                origin: null
             }
+            // onProxyReq: (proxyReq) => {
+            //     console.log('proxy', '/gdc', proxyReq.path);
+            //     if (proxyReq.method === 'DELETE' && !proxyReq.getHeader('content-length')) {
+            //         // Only set content-length to zero if not already specified
+            //         proxyReq.setHeader('content-length', '0');
+            //     }
+            // }
         },
         '/api': {
             target: 'http://localhost:3009',
             secure: false,
             onProxyReq: (req) => {
-                console.log(`Proxy ${req.path} to http://localhost:3009 (use: yarn examples-server)`);
+                console.log(`Proxy ${req.path} to http://localhost:3009 (use /examples/server)`);
             }
         }
     };
@@ -61,7 +59,8 @@ module.exports = async (env) => {
         extensions: ['.js', '.jsx'],
         alias: {
             '@gooddata/react-components/styles': path.resolve(__dirname, '../styles/'),
-            '@gooddata/react-components': path.resolve(__dirname, '../dist/')
+            '@gooddata/react-components': path.resolve(__dirname, '../dist/'),
+            'ag-grid': path.resolve(__dirname, '../node_modules/ag-grid')
         }
     };
 

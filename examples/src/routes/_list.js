@@ -15,6 +15,7 @@ import MultipleDomains from './MultipleDomains';
 import DrillWithExternalData from './DrillWithExternalData';
 import Registration from './Registration';
 import Login from './Login';
+import TablePOC from './TablePOC';
 
 export const advancedUseCasesRoutes = [
     { path: '/advanced/global-filters', title: 'Global Filters', Component: GlobalFilters },
@@ -33,6 +34,7 @@ export const mainRoutes = [
     { path: '/', title: 'Basic Components', Component: BasicComponents, exact: true },
     { path: '/visualization', title: 'Visualization Component', Component: Visualization },
     { path: '/attribute-filter-components', title: 'Attribute Filter Components', Component: AttributeFilter },
+    { path: '/table-poc', title: 'Table POC', Component: TablePOC },
     { path: '/execute', title: 'Execute Component', Component: Execute },
     { path: '/advanced', pathMatch: 'full', redirectTo: advancedUseCasesRoutes[0].path, title: 'Advanced Use Cases', Component: AdvancedUseCasesWithProps }
 ];
