@@ -1,7 +1,7 @@
 // (C) 2007-2018 GoodData Corporation
 /* eslint-disable react/jsx-closing-tag-location */
 import React, { Component } from 'react';
-// import PropTypes from 'prop-types';
+import PropTypes from 'prop-types';
 
 import { Execute } from '@gooddata/react-components';
 import { AgGridReact } from 'ag-grid-react';
@@ -9,20 +9,19 @@ import 'ag-grid-enterprise';
 import 'ag-grid/dist/styles/ag-grid.css';
 import 'ag-grid/dist/styles/ag-theme-balham.css';
 
+import { DragSource, DropTarget, DragDropContextProvider } from 'react-dnd';
+import HTML5Backend from 'react-dnd-html5-backend';
+
 import {
     projectId
 } from '../utils/fixtures';
 
 import { afm, resultSpec } from '../utils/fixturesTablePOC';
 
-// const CustomHeader = (props) => {
-//     return (<div>
-//         <div className="customHeaderLabel">{props.displayName}XXX</div>
-//     </div>);
-// };
-// CustomHeader.propTypes = {
-//     displayName: PropTypes.any.isRequired
-// };
+const DRAG_TYPE_COLUMN = 'DRAG_TYPE_COLUMN';
+const COLUMN_GUTTER = 24;
+const GD_BLUE = '#14b2e2';
+const GD_GREY = '#BDC3C7';
 
 const unwrap = wrapped => (wrapped[Object.keys(wrapped)[0]]);
 
@@ -145,6 +144,132 @@ const executionResponseToGrid = (executionDataResult) => {
     };
 };
 
+const RowDropZoneCore = ({
+    connectDropTarget,
+    isOver,
+    canDrop,
+    position = 'right'
+}) => {
+    const style = {
+        display: canDrop ? 'block' : 'none',
+        position: 'absolute',
+        top: 0,
+        height: '100%',
+        width: COLUMN_GUTTER,
+        zIndex: 100,
+        transform: `translate(${position === 'right' ? '50%' : '-50%'}, 0)`,
+        [position === 'right' ? 'right' : 'left']: COLUMN_GUTTER * (-1 / 2)
+    };
+    const indicatorStyle = {
+        width: 0,
+        height: '100%',
+        position: 'absolute',
+        left: '50%',
+        marginLeft: position === 'right' ? -1 : 0,
+        borderLeft: `2px dashed ${isOver ? GD_BLUE : GD_GREY}`
+    };
+
+    return connectDropTarget(<div style={style} >
+        <div style={indicatorStyle} />
+    </div>);
+};
+RowDropZoneCore.propTypes = {
+    connectDropTarget: PropTypes.any.isRequired,
+    isOver: PropTypes.bool.isRequired,
+    canDrop: PropTypes.bool.isRequired
+};
+
+const RowDropZone = DropTarget(
+    DRAG_TYPE_COLUMN,
+    {
+        drop(props) {
+            console.log('drop props', props);
+            return { field: props.column.colDef.field || props.column.colDef.showRowGroup };
+        }
+    },
+    (connect, monitor) => ({
+        connectDropTarget: connect.dropTarget(),
+        isOver: monitor.isOver(),
+        canDrop: monitor.canDrop()
+    })
+)(RowDropZoneCore);
+
+const isFirstRowColumn = ({ agGridReact, column }) => {
+    return column.colDef.showRowGroup === agGridReact.gridOptions.columnDefs[0].field;
+};
+
+class DragZoneCore extends Component {
+    static propTypes = {
+        displayName: PropTypes.any.isRequired,
+        isDragging: PropTypes.bool.isRequired,
+        connectDragSource: PropTypes.any.isRequired,
+        // connectDragPreview: PropTypes.any.isRequired
+    };
+
+    // componentDidMount() {
+    //     const { connectDragPreview, displayName } = this.props;
+    //     connectDragPreview(<span>{displayName}</span>);
+    // }
+
+    render() {
+        const { isDragging, connectDragSource, displayName } = this.props;
+        console.log('DragZoneCore props', this.props);
+        const style = {
+            opacity: isDragging ? 0.5 : 1,
+            width: '100%'
+        };
+        return connectDragSource(<div style={style}>{displayName}</div>);
+    }
+}
+
+const DragZone = DragSource(
+    DRAG_TYPE_COLUMN,
+    {
+        beginDrag(props) {
+            console.log('beginDrag props', props);
+            console.log('props.field', props.field);
+            return {
+                field: props.field
+            };
+        },
+        endDrag(props, monitor) {
+            const item = monitor.getItem();
+            const dropResult = monitor.getDropResult();
+            console.log('endDrag dropResult', dropResult);
+            console.log('endDrag item', item);
+            // if (dropResult) {
+            // }
+        }
+    },
+    (connect, monitor) => ({
+        connectDragSource: connect.dragSource(),
+        connectDragPreview: connect.dragPreview(),
+        isDragging: monitor.isDragging()
+    })
+)(DragZoneCore);
+
+class RowHeader extends Component {
+    static propTypes = {
+        displayName: PropTypes.any.isRequired,
+        column: PropTypes.object.isRequired
+    };
+
+    render() {
+        const { displayName, column } = this.props;
+        const style = {
+            width: '100%',
+            position: 'relative'
+        };
+        const field = column.colDef.showRowGroup;
+        console.log('RowHeader this.props', this.props);
+        return (<div style={style}>
+            {isFirstRowColumn(this.props) ? <RowDropZone column={column} position="left" /> : null}
+            <DragZone displayName={displayName} field={field} />
+            <RowDropZone column={column} />
+        </div>);
+    }
+}
+
 // /gdc/md/PID/dataResult/execID
 // executor3.res
 
@@ -157,7 +282,7 @@ export class TablePOC extends Component {
         const { columnDefs, rowData } = executionResponseToGrid(executionDataResult);
 
         const gridOptions = {
-            // frameworkComponents: { agColumnHeader: CustomHeader },
+            frameworkComponents: { agColumnHeader: RowHeader },
             // groupMultiAutoColumn: 2,
             // groupSuppressAutoColumn: true,
             // groupSuppressRow: true,
@@ -169,9 +294,10 @@ export class TablePOC extends Component {
 
             groupDefaultExpanded: -1,
             groupHideOpenParents: true,
+            suppressMovableColumns: true,
 
             autoGroupColumnDef: {
-                cellRenderer: 'simpleCellRenderer'
+                cellRenderer: 'agColumnHeader'
                 // cellRendererParams: {
                 //     suppressCount: true,
                 //     suppressDoubleClickExpand: true
@@ -194,11 +320,13 @@ export class TablePOC extends Component {
                     }
                 }
             >
-                <AgGridReact
-                    {...gridOptions}
-                    columnDefs={columnDefs}
-                    rowData={rowData}
-                />
+                <DragDropContextProvider backend={HTML5Backend}>
+                    <AgGridReact
+                        {...gridOptions}
+                        columnDefs={columnDefs}
+                        rowData={rowData}
+                    />
+                </DragDropContextProvider>
             </div>
         );
     }
