@@ -1,6 +1,7 @@
 // (C) 2007-2018 GoodData Corporation
 /* eslint-disable react/jsx-closing-tag-location */
 import React, { Component } from 'react';
+import { findDOMNode } from 'react-dom';
 import PropTypes from 'prop-types';
 
 import { Execute } from '@gooddata/react-components';
@@ -65,6 +66,7 @@ const getColumnHeaders = (
                 header.field + FIELD_SEPARATOR
             );
         }
+        header.render = 'RowHeader';
         hierarchy.push(header);
     }
 
@@ -144,92 +146,123 @@ const executionResponseToGrid = (executionDataResult) => {
     };
 };
 
-const RowDropZoneCore = ({
-    connectDropTarget,
-    isOver,
-    canDrop,
-    position = 'right'
-}) => {
-    const style = {
-        display: canDrop ? 'block' : 'none',
-        position: 'absolute',
-        top: 0,
-        height: '100%',
-        width: COLUMN_GUTTER,
-        zIndex: 100,
-        transform: `translate(${position === 'right' ? '50%' : '-50%'}, 0)`,
-        [position === 'right' ? 'right' : 'left']: COLUMN_GUTTER * (-1 / 2)
-    };
-    const indicatorStyle = {
-        width: 0,
-        height: '100%',
-        position: 'absolute',
-        left: '50%',
-        marginLeft: position === 'right' ? -1 : 0,
-        borderLeft: `2px dashed ${isOver ? GD_BLUE : GD_GREY}`
-    };
-
-    return connectDropTarget(<div style={style} >
-        <div style={indicatorStyle} />
-    </div>);
-};
-RowDropZoneCore.propTypes = {
-    connectDropTarget: PropTypes.any.isRequired,
-    isOver: PropTypes.bool.isRequired,
-    canDrop: PropTypes.bool.isRequired
+const getFieldFromProps = ({ column, columnGroup }) => {
+    console.log('getFieldFromProps column, columnGroup', column, columnGroup);
+    if (column) {
+        return column.colDef.field || column.colDef.showRowGroup || null;
+    } else if (columnGroup) {
+        return columnGroup.originalColumnGroup.colGroupDef.field || null;
+    }
+    return null;
 };
 
-const RowDropZone = DropTarget(
+class RowHeaderCore extends Component {
+    static propTypes = {
+        displayName: PropTypes.any.isRequired,
+        column: PropTypes.object.isRequired
+    };
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            indicator: null
+        };
+    }
+
+    render() {
+        const {
+            displayName,
+            column,
+            isDragging,
+            connectDragSource,
+            connectDropTarget,
+            isOver,
+            canDrop
+        } = this.props;
+
+        if (!column.colDef.showRowGroup) {
+            return <span>{displayName}</span>;
+        }
+
+        const { indicator } = this.state;
+        const headerStyle = {
+            width: '100%',
+            position: 'relative'
+        };
+        const field = column.colDef.showRowGroup;
+
+        const getIndicatorStyle = position => ({
+            width: 0,
+            height: '100%',
+            position: 'absolute',
+            top: 0,
+            marginLeft: position === 'after' ? -2 : 0,
+            borderLeft: `2px dashed ${isOver ? GD_BLUE : GD_GREY}`,
+            [position === 'after' ? 'right' : 'left']: COLUMN_GUTTER * (-1 / 2)
+        });
+        const getIndicator = position => <div style={getIndicatorStyle(position)} />;
+
+        return connectDragSource(connectDropTarget((<div style={headerStyle}>
+            {isOver && indicator ? getIndicator(indicator) : null}
+            {displayName}
+        </div>)));
+    }
+}
+
+const RowHeaderWithDrop = DropTarget(
     DRAG_TYPE_COLUMN,
     {
         drop(props) {
             console.log('drop props', props);
-            return { field: props.column.colDef.field || props.column.colDef.showRowGroup };
+            return { field: getFieldFromProps(props) };
+        },
+        hover(props, monitor, component) {
+            const dragField = monitor.getItem().field;
+            const dropField = getFieldFromProps(props);
+            if (
+                // Ignore dropping on itself
+                dragField !== dropField
+                // Only allowed dropzones
+                && monitor.canDrop()
+            ) {
+                // Determine rectangle on screen
+                const hoverBoundingRect = findDOMNode(component).getBoundingClientRect();
+
+                // Get horizontal middle
+                const hoverMiddleX = (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
+
+                // Determine mouse position
+                const clientOffset = monitor.getClientOffset();
+
+                // Get pixels to the left
+                const hoverClientX = clientOffset.x - hoverBoundingRect.left;
+
+                // TODO: Ignore dropping next to itself
+                if (hoverClientX > hoverMiddleX) {
+                    component.setState({ indicator: 'after' });
+                } else {
+                    component.setState({ indicator: 'before' });
+                }
+            }
         }
     },
-    (connect, monitor) => ({
-        connectDropTarget: connect.dropTarget(),
-        isOver: monitor.isOver(),
-        canDrop: monitor.canDrop()
-    })
-)(RowDropZoneCore);
-
-const isFirstRowColumn = ({ agGridReact, column }) => {
-    return column.colDef.showRowGroup === agGridReact.gridOptions.columnDefs[0].field;
-};
-
-class DragZoneCore extends Component {
-    static propTypes = {
-        displayName: PropTypes.any.isRequired,
-        isDragging: PropTypes.bool.isRequired,
-        connectDragSource: PropTypes.any.isRequired,
-        // connectDragPreview: PropTypes.any.isRequired
-    };
-
-    // componentDidMount() {
-    //     const { connectDragPreview, displayName } = this.props;
-    //     connectDragPreview(<span>{displayName}</span>);
-    // }
-
-    render() {
-        const { isDragging, connectDragSource, displayName } = this.props;
-        console.log('DragZoneCore props', this.props);
-        const style = {
-            opacity: isDragging ? 0.5 : 1,
-            width: '100%'
+    (connect, monitor) => {
+        return {
+            connectDropTarget: connect.dropTarget(),
+            isOver: monitor.isOver(),
+            canDrop: monitor.canDrop()
         };
-        return connectDragSource(<div style={style}>{displayName}</div>);
     }
-}
+)(RowHeaderCore);
 
-const DragZone = DragSource(
+const RowHeader = DragSource(
     DRAG_TYPE_COLUMN,
     {
         beginDrag(props) {
             console.log('beginDrag props', props);
             console.log('props.field', props.field);
             return {
-                field: props.field
+                field: getFieldFromProps(props)
             };
         },
         endDrag(props, monitor) {
@@ -246,29 +279,143 @@ const DragZone = DragSource(
         connectDragPreview: connect.dragPreview(),
         isDragging: monitor.isDragging()
     })
-)(DragZoneCore);
+)(RowHeaderWithDrop);
 
-class RowHeader extends Component {
+class ColumnHeaderCore extends Component {
     static propTypes = {
         displayName: PropTypes.any.isRequired,
         column: PropTypes.object.isRequired
     };
 
+    constructor(props) {
+        super(props);
+        this.state = {
+            indicator: null
+        };
+    }
+
     render() {
-        const { displayName, column } = this.props;
-        const style = {
+        const {
+            displayName,
+            column,
+            isDragging,
+            connectDragSource,
+            connectDropTarget,
+            isOver,
+            canDrop
+        } = this.props;
+
+        if (displayName === null) {
+            return null;
+        }
+
+        const field = getFieldFromProps(this.props);
+
+        if (field === null) {
+            return <span>{displayName}</span>;
+        }
+
+        const { indicator } = this.state;
+        const headerStyle = {
             width: '100%',
             position: 'relative'
         };
-        const field = column.colDef.showRowGroup;
-        console.log('RowHeader this.props', this.props);
-        return (<div style={style}>
-            {isFirstRowColumn(this.props) ? <RowDropZone column={column} position="left" /> : null}
-            <DragZone displayName={displayName} field={field} />
-            <RowDropZone column={column} />
-        </div>);
+        console.log('this.props', this.props);
+        // const field = column.colDef.showRowGroup;
+
+        const getIndicatorStyle = position => ({
+            height: 0,
+            position: 'absolute',
+            left: -COLUMN_GUTTER / 2,
+            right: -COLUMN_GUTTER / 2,
+            borderTop: `2px dashed ${isOver ? GD_BLUE : GD_GREY}`,
+            [position === 'after' ? 'bottom' : 'top']: position === 'after' ? 1 : 0
+        });
+        const getIndicator = position => <div style={getIndicatorStyle(position)} />;
+        return connectDragSource(connectDropTarget((<div style={headerStyle}>
+            {isOver && indicator ? getIndicator(indicator) : null}
+            {displayName}
+        </div>)));
     }
 }
+
+const ColumnHeaderWithDrop = DropTarget(
+    DRAG_TYPE_COLUMN,
+    {
+        drop(props) {
+            console.log('drop props', props);
+            return { field: getFieldFromProps(props) };
+        },
+        hover(props, monitor, component) {
+            const dragField = monitor.getItem().field;
+            const dropField = getFieldFromProps(props);
+            if (
+                // Ignore dropping on itself
+                dragField !== dropField
+                // Only allowed dropzones
+                && monitor.canDrop()
+            ) {
+                // Determine rectangle on screen
+                const hoverBoundingRect = findDOMNode(component).getBoundingClientRect();
+
+                // Get horizontal middle
+                const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+
+                // Determine mouse position
+                const clientOffset = monitor.getClientOffset();
+
+                // Get pixels to the left
+                const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+                // TODO: Ignore dropping next to itself
+                if (hoverClientY > hoverMiddleY) {
+                    console.log('top');
+                    // show right indicator
+                    component.setState({ indicator: 'after' });
+                } else {
+                    console.log('bottom');
+                    // show left indicator
+                    component.setState({ indicator: 'before' });
+                }
+            }
+        }
+    },
+    (connect, monitor) => {
+        return {
+            connectDropTarget: connect.dropTarget(),
+            isOver: monitor.isOver(),
+            canDrop: monitor.canDrop()
+        };
+    }
+)(ColumnHeaderCore);
+
+const ColumnHeader = DragSource(
+    DRAG_TYPE_COLUMN,
+    {
+        beginDrag: (props) => {
+            console.log('beginDrag props', props);
+            console.log('props.field', props.field);
+            return {
+                field: getFieldFromProps(props)
+            };
+        },
+        endDrag: (props, monitor) => {
+            const item = monitor.getItem();
+            const dropResult = monitor.getDropResult();
+            console.log('endDrag dropResult', dropResult);
+            console.log('endDrag item', item);
+            // if (dropResult) {
+            // }
+        }
+    },
+    (connect, monitor) => ({
+        connectDragSource: connect.dragSource(),
+        connectDragPreview: connect.dragPreview(),
+        isDragging: monitor.isDragging()
+    })
+)(ColumnHeaderWithDrop);
+
+const CustomHeader = ({displayName}) => (<div>!!!{displayName}</div>);
 
 // /gdc/md/PID/dataResult/execID
 // executor3.res
@@ -282,7 +429,10 @@ export class TablePOC extends Component {
         const { columnDefs, rowData } = executionResponseToGrid(executionDataResult);
 
         const gridOptions = {
-            frameworkComponents: { agColumnHeader: RowHeader },
+            frameworkComponents: {
+                agColumnHeader: RowHeader,
+                agColumnGroupHeader: ColumnHeader
+            },
             // groupMultiAutoColumn: 2,
             // groupSuppressAutoColumn: true,
             // groupSuppressRow: true,
@@ -297,7 +447,7 @@ export class TablePOC extends Component {
             suppressMovableColumns: true,
 
             autoGroupColumnDef: {
-                cellRenderer: 'agColumnHeader'
+                cellRenderer: 'simpleCellRenderer'
                 // cellRendererParams: {
                 //     suppressCount: true,
                 //     suppressDoubleClickExpand: true
