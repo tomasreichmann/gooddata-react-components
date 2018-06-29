@@ -73,14 +73,14 @@ const getColumnHeaders = (
     return hierarchy;
 };
 
-const getRowHeaders = (rowDimensionHeaders) => {
+const getRowHeaders = (rowDimensionHeaders, makeGroups) => {
     return rowDimensionHeaders.map((headerItemWrapped) => {
         const headerItem = unwrap(headerItemWrapped);
         return {
             headerName: headerItem.name,
             field: `a_${headerItem.uri.split('/obj/')[1]}`,
-            rowGroup: true,
-            hide: true
+            rowGroup: makeGroups,
+            hide: makeGroups
         };
     });
 };
@@ -105,7 +105,7 @@ const getRow = (cellData, rowIndex, columnFields, rowHeaders, rowHeaderData) => 
     return row;
 };
 
-const executionResponseToGrid = (executionDataResult) => {
+const executionResponseToGrid = (executionDataResult, makeGroups) => {
     const dimensions = executionDataResult.executionResponse.dimensions; // eslint-disable-line prefer-destructuring
     const measureData = executionDataResult.executionResult.data; // eslint-disable-line prefer-destructuring
     const headers = executionDataResult.executionResult.headerItems; // eslint-disable-line prefer-destructuring
@@ -126,7 +126,7 @@ const executionResponseToGrid = (executionDataResult) => {
         children: getColumnHeaders(headers[1])
     }];
 
-    const rowHeaders = getRowHeaders(dimensions[0].headers);
+    const rowHeaders = getRowHeaders(dimensions[0].headers, makeGroups);
 
     const columnDefs = [
         ...rowHeaders,
@@ -415,31 +415,35 @@ const ColumnHeader = DragSource(
     })
 )(ColumnHeaderWithDrop);
 
-const CustomHeader = ({displayName}) => (<div>!!!{displayName}</div>);
-
 // /gdc/md/PID/dataResult/execID
 // executor3.res
 
 export class TablePOC extends Component {
-    // constructor(props) {
-    //     super(props);
-    // }
+    constructor(props) {
+        super(props);
+        this.state = {
+            makeGroups: true
+        };
+    }
 
-    renderAgGrid(executionDataResult) {
-        const { columnDefs, rowData } = executionResponseToGrid(executionDataResult);
+    renderAgGrid(executionDataResult, makeGroups) {
+        const { columnDefs, rowData } = executionResponseToGrid(executionDataResult, makeGroups);
+
+        console.log('rowData', rowData);
+        rowData.forEach(item => item.a_2205 = 'Montgomery');
 
         const gridOptions = {
-            frameworkComponents: {
-                agColumnHeader: RowHeader,
-                agColumnGroupHeader: ColumnHeader
-            },
-            // groupMultiAutoColumn: 2,
+            // frameworkComponents: {
+            //     agColumnHeader: RowHeader,
+            //     agColumnGroupHeader: ColumnHeader
+            // },
+            groupMultiAutoColumn: 2,
             // groupSuppressAutoColumn: true,
             // groupSuppressRow: true,
             columnDefs,
             rowData,
             // groupUseEntireRow: true,
-            // enableRowGroup: true,
+            enableRowGroup: true,
             // showToolPanel: true,
 
             groupDefaultExpanded: -1,
@@ -447,7 +451,7 @@ export class TablePOC extends Component {
             suppressMovableColumns: true,
 
             autoGroupColumnDef: {
-                cellRenderer: 'simpleCellRenderer'
+                // cellRenderer: 'simpleCellRenderer'
                 // cellRendererParams: {
                 //     suppressCount: true,
                 //     suppressDoubleClickExpand: true
@@ -475,6 +479,24 @@ export class TablePOC extends Component {
                         {...gridOptions}
                         columnDefs={columnDefs}
                         rowData={rowData}
+                        onSortChanged={(param) => {
+                            const sortModel = param.api.getSortModel();
+                            console.log('sortModel', sortModel);
+                            if (sortModel.leggth === 0) {
+                                return null;
+                            }
+                            console.log('sortModel[0].colId', sortModel[0].colId);
+                            if (['ag-Grid-AutoColumn-a_2205', 'a_2205', 'ag-Grid-AutoColumn-a_2211', 'a_2211'].indexOf(sortModel[0].colId) >= 0) {
+                                console.log('makeGroups', true);
+                                return this.setState({
+                                    makeGroups: true
+                                });
+                            }
+                            console.log('makeGroups', false);
+                            return this.setState({
+                                makeGroups: false
+                            });
+                        }}
                     />
                 </DragDropContextProvider>
             </div>
@@ -482,13 +504,14 @@ export class TablePOC extends Component {
     }
 
     render() {
+        const { makeGroups } = this.state;
         return (<Execute projectId={projectId} afm={afm} resultSpec={resultSpec} >{
             ({ isLoading, result, error }) => {
                 if (isLoading) {
                     return (<div>loading ...</div>);
                 }
                 if (result) {
-                    return this.renderAgGrid(result);
+                    return this.renderAgGrid(result, makeGroups);
                 }
                 if (error) {
                     return (<pre>{JSON.stringify(error, null, 4)}</pre>);
